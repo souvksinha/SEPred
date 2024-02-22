@@ -1,0 +1,20 @@
+1. Very first thing I tried is to get the side effect classification only upto 2 trees from the ADR Hierarchy Tree (which has 4 trees). It means, say, I have renamed all ADR terms from 01.01.01.. to 01.01.11.. as the term at 01.01; renamed all ADR terms 01.02.01...01.02.11... as the term 01.02. I have done this using ADReCS_process.ipynb and saved this new ontology data as ADR_ontology_coarse.tsv.
+
+2. Also did the side effect classification based on the top tree: ADR_ontology_coarse_v2.tsv
+
+3. meddra_all_se_v1.csv, ADR_ontology_coarse_v3.csv: ++ as in Ca++ are replaced by space to help with search process.
+
+4. Now, assign every side effect from the Sider database to a ADReCS side-effect group. Output: SIDER_processed_v1.tsv
+   * first 2 cols are STITCH IDS (Flat & Stereo)
+   * 3rd column is the ADR names as found in the meddra_all_se_v1.csv file
+   * Then we have vector representation of the each ADR term as a group representation. ADReCS had 27 groups. But we have dropped 4 unnecessary groups like: 'Investigations','Social circumstances', 'Product issues', 'Surgical and medical procedures' which are not relevant as output labels. SO our output vector size for each ADR_term in 24. These are binary vectors. So only when the ADR names are childs any of the groups, we have the value of 1, else 0. An ADR name can be part of multiple groups. For the time being, I didn't do anything here, but may be later we need to manually curate for ADR names which are part of many groups and few of the group assignment is distantly connected to the ADR name, because when we have searched for the ADR names from the 'ADR_synonym' column of ADR_ontology_coarse_v2.tsv file, it matched the phrase with any synonym that has at least the word/term we're searching for. e.g. when i search for Anemia, it got the match for 10s of different types of anemia and hence assigned Anemeia to 3-4 groups. So, for future, either we can even go for bit-size matching or manual annotation. 
+
+5. Here a SE dataset with single entries for all drugs are created because in the previous file (SIDER_processed_v1.tsv) we hade many entries for every drugs corresponds to single SE/SE groups. Now I merged all SE for each drugs and made this dataset where each drug has a single entry (SIDER_processed_unique_drug_entry.tsv).
+
+6. Then from the SIDER dataset, I obtained STITCH IDs for drugs which I later used to obtain canonical (STITCH_SMILES.tsv) and isomeric smiles (STITCH_isoSMILES.tsv) from pubchem. Though I obtained the canonical smiles too, I would probably go training with the isomeric ones because SIDER has multiple CIDs of the same moleucus but of different stereochemistry. So to keep consistent with the individuality of the drug molecules, even w.r.t associated stereochemistry, isomeric smiles are better option than canonical smiles.
+
+7. Then, by following the deepside paper, i converted all smiles to extended smile representation using RDkit for a more detailed smile representation of the chemical structure. (STITCH_extendedSMILES.tsv, STITCH_extended_isoSMILES.tsv). Here we added an additional filter of smile length 45-400 similar to DeepSide paper. This is gonna be our training set.
+
+8. Then I searched for the STITCH IDs common between filtered smiles dataset (STITCH_extended*tsv) and processed sider dataset (SIDER_processed_unique_drug_entry.tsv). Now here I produce a dataset that contains STITCH IDs, smiles and side effect vectors. (SIDER_withSMILES.tsv, SIDER_with_isoSMILES.tsv)
+
+9. I also created datasets with STITCH IDs and fingerprints (ECFP4, MACCS) and also with molecular descriptors. [STITCH_extISO_ECFP4*, STITCH_extISO_MACCS*, STITCH_extISO_Descriptor* ]. This is done only on the filtered and extended isomeric smiles.
